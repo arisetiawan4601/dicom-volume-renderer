@@ -19,6 +19,8 @@ import {
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 // import textureImage from "../assets/texture/foot.raw.png";
 import textureImage from "../assets/texture/mri.png";
+import fragmentShaders from "../shaders/fragmentShaders";
+import vertexShaders from "../shaders/vertexShaders";
 
 let container,
   camera,
@@ -80,9 +82,8 @@ export const init = async () => {
   // Setup First Pass
   sceneFirstPass = new Scene();
   materialFirstPass = new ShaderMaterial({
-    vertexShader: document.getElementById("vertexShaderFirstPass").textContent,
-    fragmentShader: document.getElementById("fragmentShaderFirstPass")
-      .textContent,
+    vertexShader: vertexShaders.firstPass,
+    fragmentShader: fragmentShaders.firstPass,
     side: BackSide,
   });
   cubeFirstPass = new Mesh(geometry, materialFirstPass);
@@ -91,9 +92,8 @@ export const init = async () => {
   // Setup Second Pass
   sceneSecondPass = new Scene();
   materialSecondPass = new ShaderMaterial({
-    vertexShader: document.getElementById("vertexShaderSecondPass").textContent,
-    fragmentShader: document.getElementById("fragmentShaderSecondPass")
-      .textContent,
+    vertexShader: vertexShaders.secondPass,
+    fragmentShader: fragmentShaders.secondPass,
     side: FrontSide,
     transparent: true,
     uniforms: {
@@ -112,14 +112,17 @@ export const init = async () => {
 
 // Rendering
 export const render = (colorTreshLow, colorTreshHigh, alphaCorrection) => {
+  // set render target to a texture
   renderer.setRenderTarget(renderingTargetTexture);
   renderer.render(sceneFirstPass, camera);
+
+  // reset render target back to canvas
   renderer.resetState();
   renderer.render(sceneSecondPass, camera);
 
-  materialSecondPass.uniforms.colorTreshLow.value = colorTreshLow;
-  materialSecondPass.uniforms.colorTreshHigh.value = colorTreshHigh;
-  materialSecondPass.uniforms.alphaCorrection.value = alphaCorrection;
+  // materialSecondPass.uniforms.colorTreshLow.value = colorTreshLow;
+  // materialSecondPass.uniforms.colorTreshHigh.value = colorTreshHigh;
+  // materialSecondPass.uniforms.alphaCorrection.value = alphaCorrection;
 };
 
 // function updateTransferFunction() {
