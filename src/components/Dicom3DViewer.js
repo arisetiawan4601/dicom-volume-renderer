@@ -63,7 +63,7 @@ const StyledContainer = styled.div`
   padding-right: 8px;
 `;
 
-export const VolumeRenderer = () => {
+export const Dicom3DViewer = () => {
   const [animateReady, setAnimateReady] = useState(false);
 
   let colorTreshLow = 0.0;
