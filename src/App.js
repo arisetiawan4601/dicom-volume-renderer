@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { VolumeRenderer } from "./volume-renderer";
+import { Dicom3DViewer } from "./components/Dicom3DViewer";
 import "./style.css";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<VolumeRenderer />);
+root.render(<Dicom3DViewer />);

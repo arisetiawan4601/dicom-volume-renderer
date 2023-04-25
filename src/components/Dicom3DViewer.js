@@ -19,8 +19,8 @@ import {
   WebGLRenderer,
   WebGLRenderTarget,
 } from "three";
-import { Detector } from "./utils/Detector";
-import * as VolumeRendererUtils from "./utils/VolumeRenderer";
+import { Detector } from "../utils/detector";
+import * as VolumeRendererUtils from "../utils/volumeRenderer";
 
 const StyledSlider = styled(ReactSlider)`
   width: 100%;

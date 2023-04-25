@@ -120,9 +120,9 @@ export const render = (colorTreshLow, colorTreshHigh, alphaCorrection) => {
   renderer.resetState();
   renderer.render(sceneSecondPass, camera);
 
-  // materialSecondPass.uniforms.colorTreshLow.value = colorTreshLow;
-  // materialSecondPass.uniforms.colorTreshHigh.value = colorTreshHigh;
-  // materialSecondPass.uniforms.alphaCorrection.value = alphaCorrection;
+  materialSecondPass.uniforms.colorTreshLow.value = colorTreshLow;
+  materialSecondPass.uniforms.colorTreshHigh.value = colorTreshHigh;
+  materialSecondPass.uniforms.alphaCorrection.value = alphaCorrection;
 };
 
 // function updateTransferFunction() {
