@@ -1,7 +1,9 @@
+import axios from "axios";
 import {
   BackSide,
   BoxGeometry,
   ClampToEdgeWrapping,
+  Data3DTexture,
   FloatType,
   FrontSide,
   ImageUtils,
@@ -9,6 +11,7 @@ import {
   Mesh,
   NearestFilter,
   PerspectiveCamera,
+  RedFormat,
   Scene,
   ShaderMaterial,
   Texture,
@@ -17,7 +20,6 @@ import {
   WebGLRenderTarget,
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-// import textureImage from "../assets/texture/foot.raw.png";
 import textureImage from "../assets/texture/mri.png";
 import fragmentShaders from "../shaders/fragmentShaders";
 import vertexShaders from "../shaders/vertexShaders";
@@ -34,6 +36,27 @@ let container,
   sceneSecondPass,
   materialSecondPass,
   cubeSecondPass;
+
+const getData = async () => {
+  const response = await axios.get("http://localhost:3003/scans");
+  const stack = response.data.stack;
+  const sizeX = stack.length;
+  const sizeY = stack[0].length;
+  const sizeZ = stack[0][0].length;
+
+  const stackBuffer = new Uint8Array(sizeX * sizeY * sizeZ);
+  let i = 0;
+  for (let z = 0; z < sizeZ; z++) {
+    for (let y = 0; y < sizeY; y++) {
+      for (let x = 0; x < sizeX; x++) {
+        stackBuffer[i] = stack[z][y][x];
+        i++;
+      }
+    }
+  }
+  return stackBuffer;
+};
+
 export const init = async () => {
   container = document.getElementById("3d-view");
 
@@ -60,10 +83,12 @@ export const init = async () => {
   geometry = new BoxGeometry(1, 1, 1);
 
   // Setup Texture
-  cubeTexture = await new TextureLoader().loadAsync(textureImage);
+  cubeTexture = new Data3DTexture(await getData(), 256, 256, 256);
   cubeTexture.generateMipmaps = false;
-  // cubeTexture.minFilter = LinearFilter;
-  // cubeTexture.magFilter = LinearFilter;
+  cubeTexture.minFilter = LinearFilter;
+  cubeTexture.magFilter = LinearFilter;
+  cubeTexture.format = RedFormat;
+  cubeTexture.needsUpdate = true;
 
   // Setup First Pass Rendering Target
   renderingTargetTexture = new WebGLRenderTarget(
@@ -103,7 +128,9 @@ export const init = async () => {
       colorTreshLow: { value: 0.0 },
       colorTreshHigh: { value: 1.0 },
       steps: { value: 256 },
-      alphaCorrection: { value: 1.0 },
+      alphaCorrection: { value: 2.0 },
+      brightness: { value: 0.5 },
+      contrast: { value: 0 },
     },
   });
   cubeSecondPass = new Mesh(geometry, materialSecondPass);
@@ -111,18 +138,26 @@ export const init = async () => {
 };
 
 // Rendering
-export const render = (colorTreshLow, colorTreshHigh, alphaCorrection) => {
+export const render = (
+  colorTreshLow,
+  colorTreshHigh,
+  alphaCorrection,
+  brightness,
+  contrast
+) => {
   // set render target to a texture
   renderer.setRenderTarget(renderingTargetTexture);
   renderer.render(sceneFirstPass, camera);
 
-  // reset render target back to canvas
+  // // reset render target back to canvas
   renderer.resetState();
   renderer.render(sceneSecondPass, camera);
 
   materialSecondPass.uniforms.colorTreshLow.value = colorTreshLow;
   materialSecondPass.uniforms.colorTreshHigh.value = colorTreshHigh;
   materialSecondPass.uniforms.alphaCorrection.value = alphaCorrection;
+  materialSecondPass.uniforms.brightness.value = brightness;
+  materialSecondPass.uniforms.contrast.value = contrast;
 };
 
 // function updateTransferFunction() {

@@ -68,7 +68,9 @@ export const Dicom3DViewer = () => {
 
   let colorTreshLow = 0.0;
   let colorTreshHigh = 1.0;
-  let alphaCorrection = 1.0;
+  let alphaCorrection = 2.0;
+  let brightness = 0.5;
+  let contrast = 0;
 
   useEffect(() => {
     if (!Detector.webgl) Detector.addGetWebGLMessage();
@@ -86,7 +88,9 @@ export const Dicom3DViewer = () => {
         VolumeRendererUtils.render(
           colorTreshLow,
           colorTreshHigh,
-          alphaCorrection
+          alphaCorrection,
+          brightness,
+          contrast
         );
       };
       animate();
@@ -123,8 +127,26 @@ export const Dicom3DViewer = () => {
           renderTrack={Track}
           renderThumb={Thumb}
           onChange={(value) => {
-            console.log((value / 100) * 2);
-            alphaCorrection = (value / 100) * 2;
+            console.log((value / 100) * 4);
+            alphaCorrection = (value / 100) * 4;
+          }}
+        />
+        <StyledSlider
+          defaultValue={50}
+          renderTrack={Track}
+          renderThumb={Thumb}
+          onChange={(value) => {
+            console.log(value / 100);
+            brightness = (value / 100) * 10;
+          }}
+        />
+        <StyledSlider
+          defaultValue={50}
+          renderTrack={Track}
+          renderThumb={Thumb}
+          onChange={(value) => {
+            console.log((value / 100) * 10);
+            contrast = (value / 100) * 10;
           }}
         />
       </div>
