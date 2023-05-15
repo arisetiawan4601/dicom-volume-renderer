@@ -65,44 +65,58 @@ const StyledContainer = styled.div`
 
 export const Dicom3DViewer = () => {
   const [animateReady, setAnimateReady] = useState(false);
+  const [error, setError] = useState("");
 
   let colorTreshLow = 0.0;
   let colorTreshHigh = 1.0;
   let alphaCorrection = 2.0;
-  let brightness = 0.5;
-  let contrast = 0;
+  let alpha = 1;
+  let beta = 0;
 
   useEffect(() => {
     if (!Detector.webgl) Detector.addGetWebGLMessage();
     const initFn = async () => {
-      await VolumeRendererUtils.init();
-      setAnimateReady(true);
+      const status = await VolumeRendererUtils.init();
+      if (status === "success") {
+        setAnimateReady(true);
+      } else {
+        setError(status);
+      }
     };
     initFn();
   }, []);
 
   useEffect(() => {
     if (animateReady) {
+      console.log("ready");
+
       const animate = () => {
         requestAnimationFrame(animate);
         VolumeRendererUtils.render(
           colorTreshLow,
           colorTreshHigh,
           alphaCorrection,
-          brightness,
-          contrast
+          alpha,
+          beta
         );
       };
       animate();
+    } else {
+      console.log("not ready");
     }
   }, [animateReady]);
+
+  if (error !== "") {
+    return <p>{error}</p>;
+  }
 
   return (
     <div>
       <div
         style={{
           position: "absolute",
-          width: "400px",
+          width: "300px",
+          right: "16px",
         }}
       >
         {/* <input
@@ -113,6 +127,13 @@ export const Dicom3DViewer = () => {
             colorTresh = e.target.value / 100;
           }}
         ></input> */}
+        <p
+          style={{
+            color: "white",
+          }}
+        >
+          Trimmer
+        </p>
         <StyledSlider
           defaultValue={[0, 100]}
           renderTrack={Track}
@@ -122,6 +143,13 @@ export const Dicom3DViewer = () => {
             colorTreshHigh = value[1] / 100;
           }}
         />
+        <p
+          style={{
+            color: "white",
+          }}
+        >
+          Alpha Correction
+        </p>
         <StyledSlider
           defaultValue={50}
           renderTrack={Track}
@@ -131,22 +159,34 @@ export const Dicom3DViewer = () => {
             alphaCorrection = (value / 100) * 4;
           }}
         />
+        <p
+          style={{
+            color: "white",
+          }}
+        >
+          Alpha
+        </p>
         <StyledSlider
-          defaultValue={50}
+          defaultValue={10}
           renderTrack={Track}
           renderThumb={Thumb}
           onChange={(value) => {
-            console.log(value / 100);
-            brightness = (value / 100) * 10;
+            alpha = (value / 100) * 10;
           }}
         />
+        <p
+          style={{
+            color: "white",
+          }}
+        >
+          Beta
+        </p>
         <StyledSlider
           defaultValue={50}
           renderTrack={Track}
           renderThumb={Thumb}
           onChange={(value) => {
-            console.log((value / 100) * 10);
-            contrast = (value / 100) * 10;
+            beta = (value / 100) * 2 - 1.1;
           }}
         />
       </div>

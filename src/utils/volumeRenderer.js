@@ -29,6 +29,7 @@ let container,
   renderer,
   geometry,
   cubeTexture,
+  cubeTexture2,
   renderingTargetTexture,
   sceneFirstPass,
   materialFirstPass,
@@ -37,9 +38,7 @@ let container,
   materialSecondPass,
   cubeSecondPass;
 
-const getData = async () => {
-  const response = await axios.get("http://localhost:3003/scans");
-  const stack = response.data.stack;
+const stackIt = (stack) => {
   const sizeX = stack.length;
   const sizeY = stack[0].length;
   const sizeZ = stack[0][0].length;
@@ -55,6 +54,24 @@ const getData = async () => {
     }
   }
   return stackBuffer;
+};
+
+const getData = async () => {
+  let responseImage;
+  let responseSegmentation;
+  try {
+    responseSegmentation = await axios.get("http://localhost:3003/box");
+    responseImage = await axios.get("http://localhost:3003/scans");
+  } catch (error) {
+    return undefined;
+  }
+  const imageStack = stackIt(responseImage.data.stack);
+  const segmentationStack = stackIt(responseSegmentation.data.stack);
+  console.log(responseImage);
+  return {
+    imageTexture: imageStack,
+    segmentationTexture: segmentationStack,
+  };
 };
 
 export const init = async () => {
@@ -82,13 +99,24 @@ export const init = async () => {
   // Setup Geometry
   geometry = new BoxGeometry(1, 1, 1);
 
+  const { imageTexture, segmentationTexture } = await getData();
+  if (!imageTexture) {
+    return "Error boss!";
+  }
   // Setup Texture
-  cubeTexture = new Data3DTexture(await getData(), 256, 256, 256);
+  cubeTexture = new Data3DTexture(imageTexture, 256, 256, 256);
   cubeTexture.generateMipmaps = false;
   cubeTexture.minFilter = LinearFilter;
   cubeTexture.magFilter = LinearFilter;
   cubeTexture.format = RedFormat;
   cubeTexture.needsUpdate = true;
+
+  cubeTexture2 = new Data3DTexture(segmentationTexture, 256, 256, 256);
+  cubeTexture2.generateMipmaps = false;
+  cubeTexture2.minFilter = LinearFilter;
+  cubeTexture2.magFilter = LinearFilter;
+  cubeTexture2.format = RedFormat;
+  cubeTexture2.needsUpdate = true;
 
   // Setup First Pass Rendering Target
   renderingTargetTexture = new WebGLRenderTarget(
@@ -124,17 +152,19 @@ export const init = async () => {
     uniforms: {
       tex: { value: renderingTargetTexture.texture },
       cubeTex: { value: cubeTexture },
+      cubeTex2: { value: cubeTexture2 },
       // transferTexture: { value: transferTexture },
       colorTreshLow: { value: 0.0 },
       colorTreshHigh: { value: 1.0 },
       steps: { value: 256 },
       alphaCorrection: { value: 2.0 },
-      brightness: { value: 0.5 },
-      contrast: { value: 0 },
+      alpha: { value: 1 },
+      beta: { value: 0 },
     },
   });
   cubeSecondPass = new Mesh(geometry, materialSecondPass);
   sceneSecondPass.add(cubeSecondPass);
+  return "success";
 };
 
 // Rendering
@@ -142,8 +172,8 @@ export const render = (
   colorTreshLow,
   colorTreshHigh,
   alphaCorrection,
-  brightness,
-  contrast
+  alpha,
+  beta
 ) => {
   // set render target to a texture
   renderer.setRenderTarget(renderingTargetTexture);
@@ -156,8 +186,8 @@ export const render = (
   materialSecondPass.uniforms.colorTreshLow.value = colorTreshLow;
   materialSecondPass.uniforms.colorTreshHigh.value = colorTreshHigh;
   materialSecondPass.uniforms.alphaCorrection.value = alphaCorrection;
-  materialSecondPass.uniforms.brightness.value = brightness;
-  materialSecondPass.uniforms.contrast.value = contrast;
+  materialSecondPass.uniforms.alpha.value = alpha;
+  materialSecondPass.uniforms.beta.value = beta;
 };
 
 // function updateTransferFunction() {
