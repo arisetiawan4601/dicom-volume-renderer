@@ -19,70 +19,152 @@ const fragmentShaders = {
     uniform float alphaCorrection;
     uniform float colorTreshLow;
     uniform float colorTreshHigh;
-    uniform float alpha;
-    uniform float beta;
+    uniform float contrast;
+    uniform float brightness;
 
     void main( void ) {
+      // Transfer coordinates from [-1, 1] to [0, 1]
+      vec2 texc = vec2(((projectedCoords.x / projectedCoords.w) + 1.0 ) / 2.0, 
+        ((projectedCoords.y / projectedCoords.w) + 1.0 ) / 2.0);
+      
+      // backPosition is 3d texture coordinates from previous pass
+      vec3 backPosition = texture2D(tex, texc).xyz;
 
-      vec2 texc = vec2(((projectedCoords.x / projectedCoords.w) + 1.0 ) / 2.0,
-              ((projectedCoords.y / projectedCoords.w) + 1.0 ) / 2.0);
+      // frontPosition is 3d texture coordinates from this pass
+      vec3 frontPosition = worldSpaceCoords;
 
-      // backPos is the worldSpaceCoords from the previous pass
-      vec3 backPos = texture2D(tex, texc).xyz;
-      vec3 frontPos = worldSpaceCoords;
-
-      if ((backPos.x == 0.0) && (backPos.y == 0.0))
+      // if there is invalid backPosition value at the edge of the cube, just return;
+      if ((backPosition.x == 0.0) && (backPosition.y == 0.0))
       {
         gl_FragColor = vec4(0.0);
         return;
       }
 
-      vec3 dir = backPos - frontPos;
+      // get ray vector and length
+      vec3 ray = backPosition - frontPosition;
+      float rayLength = length(ray);
 
-      float rayLength = length(dir);
-
+      // calculate value and direction of the increment of each step
       float delta = 1.0 / steps;
+      vec3 deltaDirection = normalize(ray) * 1.0 / steps;
+      float deltaLength = length(deltaDirection);
 
-      vec3 deltaDirection = normalize(dir) * delta;
-      float deltaDirectionLength = length(deltaDirection);
+      // start the ray casting from frontPosition
+      vec3 currentPosition = frontPosition;
 
-      vec3 currentPosition = frontPos;
-      vec4 accumulatedColor = vec4(0.0);
-      float accumulatedAlpha = 0.0;
-      float accumulatedLength = 0.0;
+      vec4 accumulatedColor;
+      float accumulatedLength;
 
-      vec4 colorSample;
-      float alphaFactor;
+      float textureIntensity;
+      vec4 color;
 
-      for (int i = 0; i < 999; i++) {
-        float textureColor = texture(cubeTex, currentPosition).r;
-        textureColor = (alpha * textureColor) + beta;
-        alphaFactor = textureColor * alphaCorrection * 25.6 * delta * (1.0 - accumulatedAlpha);
+      for(int i = 0; i < 998; i++) {
+        // get intensity value for each step
+        textureIntensity = texture(cubeTex, currentPosition).r;
+        textureIntensity = (contrast * textureIntensity) + brightness;
 
-        if (textureColor >= colorTreshLow && textureColor <=  colorTreshHigh) {
-          if (texture(cubeTex2, currentPosition).r == 1.0) {
-            colorSample = vec4(1.0, 0.0, 0.0, textureColor);
-          } else {
-            colorSample = vec4(1.0, 1.0, 1.0, textureColor);
-          }
+
+        // if textureIntensity outside the treshold, then it is not contribute to the accumulated color
+        if (textureIntensity <= colorTreshLow || textureIntensity >=  colorTreshHigh) {
+          textureIntensity = 0.0;
         } 
-        // if (textureColor >= 0.9) {
-        //   colorSample = vec4(1.0, 0.0, 0.0, textureColor);
-        // } else {
-        //   colorSample = vec4(1.0, 1.0, 1.0, textureColor);
-        // }
-        
-        accumulatedColor += colorSample * alphaFactor;
-        accumulatedAlpha += alphaFactor;
 
+        if (textureIntensity >= 0.5) {
+          textureIntensity = textureIntensity * 2.56 * alphaCorrection * delta;
+          color = vec4(textureIntensity, 0.0, 0.0, textureIntensity);
+        } else {
+          textureIntensity = textureIntensity * 2.56 * alphaCorrection * delta;
+          color = vec4(textureIntensity, textureIntensity, textureIntensity, textureIntensity);
+        }
+
+        // adjust the color accumulation by some constant and alphaCorrection slider
+        // multiply its by delta means that if the step size change, the accumulated color's range will still the same
+        // multiply by (1.0 - accumulatedColor) the more color accumulated, the least its contribute to the final color
+        // accumulatedColor += color * 2.56 * alphaCorrection * delta * (1.0 - accumulatedColor);
+        accumulatedColor += color;
+
+        // make a step
+        accumulatedLength += deltaLength;
         currentPosition += deltaDirection;
-        accumulatedLength += deltaDirectionLength;
 
-        if(accumulatedLength >= rayLength || accumulatedAlpha >= 1.0 )
-          break;
+        // early termination when the color is max and break when the finished
+        if(accumulatedLength >= rayLength || accumulatedColor.a >= 1.0 )
+						break;
       }
 
       gl_FragColor = accumulatedColor;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      // vec2 texc = vec2(((projectedCoords.x / projectedCoords.w) + 1.0 ) / 2.0,
+      //         ((projectedCoords.y / projectedCoords.w) + 1.0 ) / 2.0);
+
+      // // backPos is the worldSpaceCoords from the previous pass
+      // vec3 backPos = texture2D(tex, texc).xyz;
+      // vec3 frontPos = worldSpaceCoords;
+
+      // if ((backPos.x == 0.0) && (backPos.y == 0.0))
+      // {
+      //   gl_FragColor = vec4(0.0);
+      //   return;
+      // }
+
+      // vec3 dir = backPos - frontPos;
+
+      // float rayLength = length(dir);
+
+      // float delta = 1.0 / steps;
+
+      // vec3 deltaDirection = normalize(dir) * delta;
+      // float deltaDirectionLength = length(deltaDirection);
+
+      // vec3 currentPosition = frontPos;
+      // vec4 accumulatedColor = vec4(0.0);
+      // float accumulatedAlpha = 0.0;
+      // float accumulatedLength = 0.0;
+
+      // vec4 color;
+      // float alphaFactor;
+
+      // for (int i = 0; i < 999; i++) {
+      //   float textureIntensity = texture(cubeTex, currentPosition).r;
+
+      //   textureIntensity = (contrast * textureIntensity) + brightness;
+
+      //   if (textureIntensity >= colorTreshLow && textureIntensity <=  colorTreshHigh) {
+      //     // if (texture(cubeTex2, currentPosition).r == 1.0) {
+      //     //   color = vec4(1.0, 0.0, 0.0, textureIntensity);
+      //     // } else {
+      //     //   color = vec4(1.0, 1.0, 1.0, textureIntensity);
+      //     // }
+      //     color = vec4(1.0, 1.0, 1.0, textureIntensity);
+      //   } else {
+      //     color = vec4(0.0, 0.0, 0.0, 0.0);
+      //   }
+      
+        
+      //   accumulatedColor += color * delta * 25.6 * (1.0 - accumulatedColor.r) * alphaCorrection;
+
+
+      //   currentPosition += deltaDirection;
+      //   accumulatedLength += deltaDirectionLength;
+
+      //   if(accumulatedLength >= rayLength || accumulatedColor.r >= 1.0 )
+      //     break;
+      // }
+
+      // gl_FragColor = accumulatedColor;
 
 
 

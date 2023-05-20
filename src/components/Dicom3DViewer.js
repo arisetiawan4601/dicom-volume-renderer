@@ -70,8 +70,8 @@ export const Dicom3DViewer = () => {
   let colorTreshLow = 0.0;
   let colorTreshHigh = 1.0;
   let alphaCorrection = 2.0;
-  let alpha = 1;
-  let beta = 0;
+  let contrast = 1;
+  let brightness = 0;
 
   useEffect(() => {
     if (!Detector.webgl) Detector.addGetWebGLMessage();
@@ -96,8 +96,8 @@ export const Dicom3DViewer = () => {
           colorTreshLow,
           colorTreshHigh,
           alphaCorrection,
-          alpha,
-          beta
+          contrast,
+          brightness
         );
       };
       animate();
@@ -119,14 +119,6 @@ export const Dicom3DViewer = () => {
           right: "16px",
         }}
       >
-        {/* <input
-          type="range"
-          min={0}
-          max={100}
-          onChange={(e) => {
-            colorTresh = e.target.value / 100;
-          }}
-        ></input> */}
         <p
           style={{
             color: "white",
@@ -155,7 +147,6 @@ export const Dicom3DViewer = () => {
           renderTrack={Track}
           renderThumb={Thumb}
           onChange={(value) => {
-            console.log((value / 100) * 4);
             alphaCorrection = (value / 100) * 4;
           }}
         />
@@ -164,14 +155,14 @@ export const Dicom3DViewer = () => {
             color: "white",
           }}
         >
-          Alpha
+          Contrast
         </p>
         <StyledSlider
           defaultValue={10}
           renderTrack={Track}
           renderThumb={Thumb}
           onChange={(value) => {
-            alpha = (value / 100) * 10;
+            contrast = (value / 100) * 10;
           }}
         />
         <p
@@ -179,14 +170,14 @@ export const Dicom3DViewer = () => {
             color: "white",
           }}
         >
-          Beta
+          Brightness
         </p>
         <StyledSlider
           defaultValue={50}
           renderTrack={Track}
           renderThumb={Thumb}
           onChange={(value) => {
-            beta = (value / 100) * 2 - 1.1;
+            brightness = (value / 100) * 2 - 1.1;
           }}
         />
       </div>
